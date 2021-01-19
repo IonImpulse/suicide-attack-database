@@ -166,7 +166,7 @@ async function onLoad() {
                 let option_index = 0;
 
                 for (option of options_list) {
-                    console.log(option);
+
                     buttons_html += `
                     <div class="filter-checkbox-item">
                         ${option}
@@ -235,7 +235,7 @@ function getPassingValues() {
                 upper_bound = Infinity;
             }
 
-            passing_values.push({header_index:header_index,type:"number",lower:lower_bound,upper:upper_bound});
+            passing_values.push({header_index:header_index,type:"number",lower:parseInt(lower_bound),upper:parseInt(upper_bound)});
         }
     }
 
@@ -264,6 +264,17 @@ function getPassingValues() {
         }
     }
 
+    for (filter of boolean_filters) {
+        let header_index = parseInt(filter.id.replace("header_",""));
+
+        console.log(filter.childNodes[4]);
+
+        if (filter.childNodes[4].checked == true) {
+            passing_values.push({header_index:header_index,type:"boolean"});
+        } else {
+            passing_values.push({header_index:header_index,type:"pass"});
+        }
+    }
     return passing_values;
 }
 
@@ -274,9 +285,9 @@ function submitFilters() {
 
     let filtered_suicide_attack_data = [];
 
-    
-
     const passing_array = getPassingValues();
+
+    console.log(passing_array);
 
     for (obj of suicide_attack_data) {
         let passed = true;
@@ -286,11 +297,15 @@ function submitFilters() {
                 const to_test = obj[header_array[value.header_index].csv_name];
                 
                 if (value.type == "number") {
-                    if (!(to_test >= value.lower_bound && to_test <= value.upper_bound)) {
+                    if (!(parseInt(to_test) >= value.lower && parseInt(to_test) <= value.upper)) {
                         passed = false;
                     }
                 } else if (value.type == "checkbox") {
                     if (!(value.pass_list.includes(to_test))) {
+                        passed = false;
+                    }
+                } else if (value.type == "boolean") {
+                    if (to_test == "False") {
                         passed = false;
                     }
                 }
