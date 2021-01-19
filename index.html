@@ -21,9 +21,13 @@
         
         <h1>UChicago Suicide Attack Database Mirror</h1>
         <h2>[ CPOST-SAD ]</h2>
-        
+        <h3>If an option is left blank, everything will be included. Eg: no birth year range is specified, so all birth years will be included.</h3>
         <div id="filter-holder"></div>
-        
+
+        <div class="button-holder" id="button-holder">
+            <button class="button-three" onclick="submitFilters()">Submit</button>
+        </div>
+
         <div id="table-holder"></div>
 
         <script src="scripts/tablesort.min.js"></script>

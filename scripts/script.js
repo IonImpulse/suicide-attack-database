@@ -131,6 +131,7 @@ async function onLoad() {
     console.log("Creating filter buttons...");
 
     let buttons_html = "";
+    let header_index = 0;
 
     for (header of header_array) {
         if (to_display.includes(header.name)) {
@@ -138,15 +139,19 @@ async function onLoad() {
                 let min_max = findMinMax(suicide_attack_data, header.csv_name);
     
                 buttons_html += `\
-                <div class="filter-box" id="${header.name.replace(" ", "-")}">
+                <div class="filter-box filter-number" id="header_${header_index}">
                     <b>${header.name}</b><br>Between
-                    <input type="number" id="filter_${header.name.replace(" ", "-")}_lower" min="${min_max[0]}" max="${min_max[1]}"> and <input type="number" id="filter_${header.name.replace(" ", "-")}_upper" min="${min_max[0]}" max="${min_max[1]}">
+                    <input type="number" id="filter_${header_index}_lower" min="${min_max[0]}" max="${min_max[1]}"> and <input type="number" id="filter_${header_index}_upper" min="${min_max[0]}" max="${min_max[1]}">
                 </div>
                 `;
     
             } else if (header.type == "string") {
     
-                buttons_html += `<div class="filter-box filter-checkbox" id="${header.name.replace(" ", "-")}">`;
+                buttons_html += `
+                <div class="filter-box filter-checkbox" id="header_${header_index}">
+                    <b>${header.name}</b>
+                    
+                `;
     
                 let options_list = [];
                 
@@ -157,40 +162,148 @@ async function onLoad() {
                 }
     
                 options_list.sort();
-    
+                
+                let option_index = 0;
+
                 for (option of options_list) {
                     console.log(option);
                     buttons_html += `
                     <div class="filter-checkbox-item">
                         ${option}
-                        <input type="checkbox" value="${option}">
+                        <input type="checkbox" id="checkbox_${header_index}_${option_index}" value="${option}">
                     </div>`
                     ;
+                    option_index++;
                 }
     
                 buttons_html += "</div>";
-            } 
+            } else if (header.type == "boolean") {
+                buttons_html += `\
+                <div class="filter-box filter-boolean" id="header_${header_index}">
+                    <b>${header.name}</b><br>
+                    <input type="checkbox">
+                </div>
+                `;
+            }
         }
+
+        header_index++;
         
     }
 
     document.getElementById("filter-holder").innerHTML = buttons_html;
     
-    //showTable(suicide_attack_data, header_array);
+    console.log("Created!");
     
 }
 
-function processSortRequest() {
-
-    const suicide_attack_data = JSON.parse(sessionStorage.getItem("suicide_attack_data"));
-}
-
 function showTable(suicide_attack_data, header_array) {
+    document.getElementById("button-holder").style.marginBottom = "10vh";
+    document.getElementById("table-holder").style.marginBottom = "30vh";
+
     document.getElementById("table-holder").innerHTML = createTable(suicide_attack_data, header_array);
 
     new Tablesort(document.getElementById("table-main"), {
         decending: true
     });
+}
+
+function getPassingValues() {
+    let number_filters = document.getElementsByClassName("filter-number");
+    let checkbox_filters = document.getElementsByClassName("filter-checkbox");
+    let boolean_filters = document.getElementsByClassName("filter-boolean");
+    
+    let passing_values = [];
+
+    for (filter of number_filters) {
+        let header_index = parseInt(filter.id.replace("header_",""));
+
+        let lower_bound = document.getElementById(`filter_${header_index}_lower`).value;
+        let upper_bound = document.getElementById(`filter_${header_index}_upper`).value;
+
+        const test_number = obj[header_array[header_index].csv_name];
+        
+        if (lower_bound == "" && upper_bound == "") {
+            passing_values.push({header_index:header_index,type:"pass"});
+            
+        } else {
+            if (lower_bound == "") {
+                lower_bound = -1;
+            }
+
+            if (upper_bound == "") {
+                upper_bound = Infinity;
+            }
+
+            passing_values.push({header_index:header_index,type:"number",lower:lower_bound,upper:upper_bound});
+        }
+    }
+
+    for (filter of checkbox_filters) {
+        let header_index = parseInt(filter.id.replace("header_",""));
+
+        let temp_passing_values = [];
+
+        for (child of filter.childNodes) {
+            if (child.childNodes[1] != undefined) {
+                if (child.childNodes[1].value != undefined && child.childNodes[1].value != "") {
+                    let value = child.childNodes[1].value;
+                    let checked = child.childNodes[1].checked;
+                
+                    if (checked === true) {
+                        temp_passing_values.push(value);
+                    }                    
+                }
+            }
+        }
+
+        if (temp_passing_values.length == 0) {
+            passing_values.push({header_index:header_index,type:"pass"});
+        } else {
+            passing_values.push({header_index:header_index,type:"checkbox",pass_list:temp_passing_values});
+        }
+    }
+
+    return passing_values;
+}
+
+function submitFilters() {
+    console.log("Filtering out data...");
+
+    const suicide_attack_data = JSON.parse(sessionStorage.getItem("suicide_attack_data"));
+
+    let filtered_suicide_attack_data = [];
+
+    
+
+    const passing_array = getPassingValues();
+
+    for (obj of suicide_attack_data) {
+        let passed = true;
+
+        for (value of passing_array) {
+            if (value.type != "pass") {
+                const to_test = obj[header_array[value.header_index].csv_name];
+                
+                if (value.type == "number") {
+                    if (!(to_test >= value.lower_bound && to_test <= value.upper_bound)) {
+                        passed = false;
+                    }
+                } else if (value.type == "checkbox") {
+                    if (!(value.pass_list.includes(to_test))) {
+                        passed = false;
+                    }
+                }
+            }
+        }
+
+        if (passed === true) {
+            filtered_suicide_attack_data.push(obj);
+        }
+    }
+    
+
+    showTable(filtered_suicide_attack_data, header_array);
 }
 
 onLoad();
