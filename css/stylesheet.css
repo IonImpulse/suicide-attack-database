@@ -1,0 +1,31 @@
+body {
+    margin-left: 10vw;
+    margin-right: 10vw;
+}
+
+#table-main {
+    margin-right: 0px;
+    font-size: 12px;
+}
+
+#filter-holder {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.filter-box {
+    border: 5px black solid;
+    margin: 1vw;
+    padding: .5vw;
+}
+
+.filter-checkbox {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.filter-checkbox-item {
+    margin: 1vw;
+}
